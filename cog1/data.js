@@ -394,16 +394,26 @@ define(["exports", "data", "glMatrix"], function(data, exports) {
 		}
 		
 		// BEGIN exercise Vertex-Normals
-		
-		// Initialize normal array.
-		// Loop over polygons.
-
-			// Loop over vertices of polygon.
-
-				// Accumulate/add all polygon normals.
-
-		// Normalize normals.
-
+		for (var i=0; i < this.vertices.length; i++) {
+    		// Loop over polygons.
+    		for (var j=0; j < this.polygonVertices.length; j++) {
+                // Loop over vertices of polygon.
+                for (var k=0; k < this.polygonVertices[j].length; k++) {
+                    // Accumulate/add all polygon normals.
+                    if(this.vertices[this.polygonVertices[j][k]][0] == this.vertices[i][0]
+                        && this.vertices[this.polygonVertices[j][k]][1] == this.vertices[i][1] 
+                        && this.vertices[this.polygonVertices[j][k]][2] == this.vertices[i][2]){
+                        
+                        this.vertexNormals[i][0] += this.polygonNormals[j][0];
+                        this.vertexNormals[i][1] += this.polygonNormals[j][1];
+                        this.vertexNormals[i][2] += this.polygonNormals[j][2];
+                    }
+                };
+    		};
+		    // Normalize normal.
+    		normalize(this.vertexNormals[i]);
+        };
+        
 		// END exercise Vertex-Normals
 	}
 	
@@ -427,24 +437,32 @@ define(["exports", "data", "glMatrix"], function(data, exports) {
 		
 		// BEGIN exercise Z-Buffer
 		// BEGIN exercise Vertex-Normals
-
-		// Two edge-vectors dim 3:
-
-				// Check for polygon vertex exist (common index error in data).
-
-					// We do not use the matrix lib here.
-
-			// Calculate normal vector from vector product of edges.
-
-			// Check that e[u] are not parallel.
-
-				// Normal exist, otherwise try next edges.
-
-			// Set null-vector (alternative: positive z-direction) as default. 
-
-			// Normalize n, ignoring w.
-			// We do this by hand as the length is already calculated.
-
+		
+		// Find two non-parallel edge-vectors:
+		var isFound = false;
+		var a = [vertices[polygon[0]][0] - vertices[polygon[1]][0], vertices[polygon[0]][1] - vertices[polygon[1]][1], vertices[polygon[0]][2] - vertices[polygon[1]][2]];
+		
+        for (var i=0; i < polygon.length && !isFound; i++) {
+        	var b = [vertices[polygon[0]][0] - vertices[polygon[i]][0], vertices[polygon[0]][1] - vertices[polygon[i]][1], vertices[polygon[0]][2] - vertices[polygon[i]][2]];
+    		
+            // Check for polygon vertex exist (common index error in data).
+            if(a == null || a[0] == NaN || a[1] == NaN || a[2] == NaN || b[0] == NaN || b[1] == NaN || b[2] == NaN)
+                return 0;
+                
+            // Check if not parallel. The two edge vectors are parallel, if |a| * |b| == a * b
+            // Multiplied by 10000 to make the necessary rounding more precise. 
+            isFound = Math.round(10000 * getVectorLength(a) * getVectorLength(b)) != Math.round(10000 * getDotProduct(a, b));
+        };
+        
+        if(!isFound)
+            return 0;
+            
+        // Calculate normal vector from vector product of edges.
+        var normal = getCrossProduct(a, b);
+        normalize(normal);
+        n[0] = normal[0];
+        n[1] = normal[1];
+        n[2] = normal[2];
 		
 		// Only  for template, comment this out for solution.
 		return 1;
@@ -452,6 +470,27 @@ define(["exports", "data", "glMatrix"], function(data, exports) {
 		// END exercise Vertex-Normals
 		// END exercise Z-Buffer
 	}
+	
+	function getDotProduct(a, b){
+	    return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+	}
+	
+	function getVectorLength(vector){
+	    return Math.sqrt(Math.pow(vector[0], 2) + Math.pow(vector[1], 2) + Math.pow(vector[2], 2));
+	}
+    
+    function getCrossProduct(a, b){
+        return [a[1]*b[2] - a[2]*b[1], a[2]*b[0] - a[0]*b[2], a[0]*b[1] - a[1]*b[0]];
+    }
+    
+    function normalize(vector){
+        var length = getVectorLength(vector);
+        if(length != 0){
+        vector[0] /= length;
+        vector[1] /= length;
+        vector[2] /= length;
+        }
+    }
 	
 	/**
 	 * Create triangle fans (123, 134, 145, ...)
