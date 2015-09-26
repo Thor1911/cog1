@@ -94,15 +94,13 @@ define(["exports", "data", "glMatrix"], function(exports, data) {
             result_array = devide_all(vertex_array, index_array);
             vertex_array = result_array[0];
             index_array = result_array[1];
-            
-            console.log("vertices: ");
-            console.log(vertex_array);
-            console.log("triangles: ");
-            console.log(index_array);
         };
 
         instance.vertices = vertex_array;
         instance.polygonVertices = index_array;
+            
+        console.log("vertices count: " + instance.vertices.length);
+        console.log("polygon count:  " + instance.polygonVertices.length);
 
         // END exercise Sphere
 
