@@ -22,7 +22,7 @@ function(exports, scenegraph, animation) {
 
 		// BEGIN exercise myModel
 		var myModel = scenegraph.createNodeWithModel("Aufgabe 2 - Haus vom Nikolaus", "myModel", {scale:200});	
-		var sphere = scenegraph.createNodeWithModel("Projektaufgabe M2 - Kugel", "sphere", {scale:200, recursionDepth:4});		
+		var sphere = scenegraph.createNodeWithModel("Projektaufgabe M2 - Kugel", "sphere", {scale:200, recursionDepth:3});		
 		// END exercise myModel
 
 		//var cubeNode = scenegraph.createNodeWithModel("cube", "cube", {scale:100, textureURL:"brickWall.jpg"});		

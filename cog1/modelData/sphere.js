@@ -79,14 +79,14 @@ define(["exports", "data", "glMatrix"], function(exports, data) {
 
         // octahedron triangles
         var index_array = [
-            [0, 4, 2],
-            [2, 4, 1],
-            [1, 4, 3],
-            [3, 4, 0],
-            [0, 2, 5],
-            [2, 1, 5],
-            [1, 3, 5],
-            [3, 0, 5]
+            [2, 4, 0],
+            [1, 4, 2],
+            [3, 4, 1],
+            [0, 4, 3],
+            [5, 2, 0],
+            [5, 1, 2],
+            [5, 3, 1],
+            [5, 0, 3]
         ];
 
         var result_array;
@@ -194,7 +194,7 @@ define(["exports", "data", "glMatrix"], function(exports, data) {
             indexB = getFirstOrNewIndexOf(vertices, b);
             indexC = getFirstOrNewIndexOf(vertices, c);
             
-            new_triangle_array.push([triangle[0],indexA, indexC]);
+            new_triangle_array.push([triangle[0],indexA,indexC]);
             new_triangle_array.push([indexA,triangle[1],indexB]);
             new_triangle_array.push([indexA,indexB,indexC]);
             new_triangle_array.push([indexC,indexB,triangle[2]]);
