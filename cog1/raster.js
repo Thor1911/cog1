@@ -110,7 +110,7 @@ function(exports, shader, framebuffer, data) {
 		var dYdXdiff2 = 2 * (dYAbs - dXAbs);
 
 		// Decision variable.
-		var e;
+		var e = 0;
 		// Loop variables.
 		var x = startX;
 		var y = startY;
@@ -129,36 +129,59 @@ function(exports, shader, framebuffer, data) {
 
 		// BEGIN exercise Bresenham
 		// Comment out the next two lines.
-		drawLine(startX, startY, endX, endY, color);
-		return;
+		//drawLine(startX, startY, endX, endY, color);
+		//return;
 
 		// Skip it, if the line is just a point.
-
+		if(startX == endX && startY == endY)
+		  return;
 
 		// Optionally draw start point as is the same
 		// as the end point of the previous edge.
 		// In any case, do not add an intersection for start point here,
 		// this should happen later in the scanline function.
-
+		framebuffer.set(x, y, getZ(x, y), color);
 
 		// Distinction of cases for driving variable.
-
-			// x is driving variable.
-
-						// Do not add intersections for points on horizontal line
-						// and not the end point, which is done in scanline.
-
-					//framebuffer.set(x, y, getZ(x, y), color);
-
-			// y is driving variable.
-
-					// Add every intersection as there can be only one per scan line.
-					// but not the end point, which is done in scanline.
-
-						//framebuffer.set(x, y, getZ(x, y), color);
-		
-		// END exercise Bresenham		
+        if(dXAbs > dYAbs){ // x is driving variable.
+            dz = (endZ - startZ) / dXAbs;
+			for (var i=0; i < dXAbs; i++) {
+                e -= dYAbs;
+                z += dz;
+                x += dXSign; //Schritt in schnelle Richtung
+			    if(e < 0){ //Schritt in langsame Richtung
+			        y += dYSign;
+                    e += dXAbs;
+			    }
+			  
+				// Do not add intersections for points on horizontal line
+				// and not the end point, which is done in scanline.
+				
+			    framebuffer.set(x, y, z, color);
+			};
+        }
+        else{ // y is driving variable.
+            dz = (endZ - startZ) / dYAbs;
+            for (var i=0; i < dYAbs; i++) {
+                e -= dXAbs;
+                z += dz;
+                y += dYSign; //Schritt in schnelle Richtung
+                if(e < 0){ //Schritt in langsame Richtung
+                    x += dXSign;
+                    e += dYAbs;
+                }
+              
+                // Do not add intersections for points on horizontal line
+                // and not the end point, which is done in scanline.
+                
+                framebuffer.set(x, y, z, color);
+            };
+		}
+				
+		// END exercise Bresenham
 	};
+	
+	
 
 	/**
 	 * Draw edges of given polygon. See also scanlineFillPolygon().
