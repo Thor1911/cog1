@@ -137,38 +137,43 @@ function(exports, shader, framebuffer, data) {
 		// In any case, do not add an intersection for start point here,
 		// this should happen later in the scanline function.
 		framebuffer.set(x, y, getZ(x, y), color);
-
+		
 		// Distinction of cases for driving variable.
         if(dXAbs > dYAbs){ // x is driving variable.
-			for (var i=0; i < dXAbs; i++) {
-                e -= dYAbs;
-                x += dXSign; //Schritt in schnelle Richtung
+            e = dXAbs - dYAbs;
+            for (var i = 0; i < dXAbs + dYAbs; i++) {
 			    if(e < 0){ //Schritt in langsame Richtung
 			        y += dYSign;
                     e += dXAbs;
+                    // Do not add intersections for points on horizontal line
+                    // and not the end point, which is done in scanline.
+                    if (storeIntersectionForScanlineFill && startY != endY && endY != y && startY != y) {
+                        addIntersection(x, y, getZ(x, y), 1, edgeStartVertexIndex, edgeEndVertexIndex, edgeStartTextureCoord, edgeEndTextureCoord);
+                    }
 			    }
-			    framebuffer.set(x, y, getZ(x, y), color);
-			  
-				// Do not add intersections for points on horizontal line
-				// and not the end point, which is done in scanline.
-                if (storeIntersectionForScanlineFill && x != startX && y != startY && startX != endX) {
-                    addIntersection(x, y, getZ(x, y), 1, edgeStartVertexIndex, edgeEndVertexIndex, edgeStartTextureCoord, edgeEndTextureCoord);
+			    else{ //Schritt in schnelle Richtung
+			        x += dXSign;
+                    e -= dYAbs;
                 }
+                
+			    framebuffer.set(x, y, getZ(x, y), color);
 			};
         }
         else{ // y is driving variable.
-            for (var i=0; i < dYAbs; i++) {
-                e -= dXAbs;
-                y += dYSign; //Schritt in schnelle Richtung
+            e = dYAbs - dXAbs;
+            for (var i = 0; i < dXAbs + dYAbs; i++) {
                 if(e < 0){ //Schritt in langsame Richtung
                     x += dXSign;
                     e += dYAbs;
                 }
-              
-                // Do not add intersections for points on horizontal line
-                // and not the end point, which is done in scanline.
-                if (storeIntersectionForScanlineFill && x != startX && y != startY && startX != endX) {
-                    addIntersection(x, y, getZ(x, y), 1, edgeStartVertexIndex, edgeEndVertexIndex, edgeStartTextureCoord, edgeEndTextureCoord);
+                else{ //Schritt in schnelle Richtung
+                    y += dYSign;
+                    e -= dXAbs;
+                    // Do not add intersections for points on horizontal line
+                    // and not the end point, which is done in scanline.
+                    if (storeIntersectionForScanlineFill && startY != endY && endY != y && startY != y) {
+                        addIntersection(x, y, getZ(x, y), 1, edgeStartVertexIndex, edgeEndVertexIndex, edgeStartTextureCoord, edgeEndTextureCoord);
+                    }
                 }
                 
                 framebuffer.set(x, y, getZ(x, y), color);
@@ -222,7 +227,6 @@ function(exports, shader, framebuffer, data) {
 		// Maybe skip polygons that are perpendicular to the screen / xy-plane.
 		// The plane calculation can be commented out if bi-linear interpolation is applied.
 		if(! calcPlaneEquation(vertices, polygon)) {
-			//console.log("Skip plane(polygon) is perpendicular to the screen / xy-plane, color: " + color.name);
 			return;
 		}
 
@@ -232,37 +236,17 @@ function(exports, shader, framebuffer, data) {
 
 		// BEGIN exercise Texture
 		// BEGIN exercise Scanline
-		console.log("Scanline");
-		
-		for(var i = 0; i < polygon.length; i++) {
-            // Read x,y,z values from vertices into 2D array
-            var p1 = polygon[i];
-            var p2 = [i == 0 ? polygon.length-1 : i-1];
-
-            // var x1 = vertices[p1][0];
-            // var x2 = vertices[p2][0];
-
-            var y1 = vertices[p1][1];
-            var y2 = vertices[p2][1];
-
-            // var z1 = vertices[p1][2];
-            // var z2 = vertices[p2][2];
-
+        for (var i = 0; i < polygon.length; i++) {
             // For the start edge we need the last edge with derivative !=0,
             // Pre-calculate the derivatives for last edge !=0 of polygon.
-            // derivative = calcDerivative(y1, y2);
-
-            derivative = calcDerivative(y1, y2);
+            
+            derivative = calcDerivative(vertices[polygon[i]][1], vertices[polygon[i == 0 ? polygon.length - 1 : i - 1]][1]);
             if (derivative != 0) {
-                // Save the last derivative != 0
                 lastDerivative = derivative;
             }
-            console.log("lastDerivative (!=0) = " + lastDerivative);
         }
 
-        // Also after the rasterization with floor we need a valid triangle.
-        if(!lastDerivative) {
-            console.log("Skip polygon, it has no extension in xy-plane: " + polygon);
+        if (lastDerivative == undefined) {
             return;
         }
 
@@ -272,14 +256,8 @@ function(exports, shader, framebuffer, data) {
         for (var i = 0; i < polygon.length; i++) {
             
             // Determine start and end point of edge.
-            var start = vertices[i];
-            var end;
-            // Connect edge to next or to first vertex to close the polygon.
-            if (i == vertices.length-1) {
-                end = vertices[0];  // The end of the last vertex is same as start of the first vertex
-            } else {
-                var end = vertices[i+1];
-            }
+            var start = vertices[polygon[i]];
+            var end = vertices[polygon[i == 0 ? polygon.length - 1 : i - 1]];
 
             // Convert parameters to integer values.
             // Use Math.floor() for integer cast and rounding of X-Y values.
@@ -290,37 +268,27 @@ function(exports, shader, framebuffer, data) {
 
             // Leave Z as floating point for comparisons in z-buffer.
             // Set texture coordinate uv-vector/array of the current edge for later interpolation.
+            //TODO Texture
 
             // Calculate current derivative
             derivative = calcDerivative(start[1], end[1]);
 
             // Add end point of non horizontal edges.
-            if (derivative != 0) {
+            if (derivative != 0 ) {
                 addIntersection(end[0], end[1], end[2], 1);
-                console.log("Add end point of non-horizontal edge: " + end[0] + "," + end[1]);
-            }
-
-            // Last derivative has to exist, always, also for the first edge.
-            if (!lastDerivative) {
-                console.log("Error: no valid lastDerivative: " + lastDerivative);
-            }
-
-            // Add start point if edges are non monotonous, Peek point.
-            if ((lastDerivative + derivative == 0) && (derivative != 0)) {
-                addIntersection(start[0], start[1], start[2], 1);
-                console.log("Add start point of non-monotonous edge: " + start[0] + "," + start[1]);
+                
+                // Add start point if edges are non monotonous, Peek point.
+                if(derivative + lastDerivative == 0){
+                    addIntersection(end[0], end[1], end[2], 1);
+                }
+                
+                lastDerivative = derivative;
             }
             
             drawLineBresenham(start[0], start[1], start[2], end[0], end[1], end[2], color, true);
-                
-            if (derivative == 0) {
-                derivative = lastDerivative;
-            }
-
         }
 		// END exercise Scanline
 		// END exercise Texture
-
 	}
 
 	/**
@@ -474,17 +442,18 @@ function(exports, shader, framebuffer, data) {
 
 
 		// BEGIN exercise Scanline
-
+		
 		// Fill polygon line by line using the scanline algorithm.
 		// Loop over non empty scan lines.
 		for (var y = 0; y < scanlineIntersection.length; y++) {
-		    var line = scanlineIntersection[i];
-		    if (line == undefined)
+		    var line = scanlineIntersection[y];
+		    if (line == undefined){
 		        continue;
+		    }
 		        
 		    // // Do (or skip) some safety check.
             if ((line.length < 2) || (line.length % 2)) {
-                console.log("Error in number of intersection (" + line.length + ") in line: " + y);
+                continue;
             }
             
 			// Order intersection in scanline.
@@ -497,14 +466,14 @@ function(exports, shader, framebuffer, data) {
               
                 // Calculate interpolation variables for current scanline.
                 // Necessary for z-buffer, shading and texturing.
-                interpolationData.weights.forEach(function(scope, index, array) {
-                     array[index] += deltaInterpolationWeight[index];
-                });
+                //interpolationData.weights.forEach(function(scope, index, array) {
+                //     array[index] += deltaInterpolationWeight[index];
+                //});
 
                 // Fill line section inside polygon, loop x.
-                for(var x = intersecA.x; x <= intersecB.x; x += 2){
+                for(var x = intersecA.x; x <= intersecB.x; x++){
                     // Set z shorthand.
-                    z = 0;
+                    var z = 0;
                     
                     // Do horizontal clipping test (true if passed).
                     horizontalClippingTest = (x >= 0) && (x < width);
@@ -641,7 +610,7 @@ function(exports, shader, framebuffer, data) {
 		if(scanlineIntersection[y] == undefined) {
 			scanlineIntersection[y] = [];
 		}
-
+		
 		// Each intersection is an object, an array is not significantly faster.
 		scanlineIntersection[y].push({
 			x : x,
@@ -677,9 +646,9 @@ function(exports, shader, framebuffer, data) {
 
 		// Take this check out for speed.
 		// Or when the implemetation in not yet complete, i.e. scanline is not implemented.
-		//if(!isFinite(z)) {
-			//console.log("z isNaN or not isFinite for (x,y): " + x + " , " + y);
-		//}
+		if(!isFinite(z)) {
+			console.log("z isNaN or not isFinite for (x,y): " + x + " , " + y + " (A, B, D, inverseC): " + A + ", " + B + ", " + D + ", " + inverseC);
+		}
 
 		return z;
 	}
