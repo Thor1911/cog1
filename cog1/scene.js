@@ -398,7 +398,10 @@ function(exports, dojo, domStyle, app, scenegraph, createScene, animation, raste
 			}
 
 			// BEGIN exercise Back-Face Culling
-
+			if(backfaceCulling && normal != undefined && normal[2] < 0){
+			    console.log("Back face: " + polygon);
+			    continue;
+			}
 			// Back-face culling.
 			// Check if polygon is facing away from the camera (in negative z-direction).
 
@@ -447,6 +450,10 @@ function(exports, dojo, domStyle, app, scenegraph, createScene, animation, raste
 			var normal = polygonNormals[p];
 
 			// BEGIN exercise Back-Face Culling
+            if(backfaceCulling && normal != undefined && normal[2] < 0){
+                console.log("Back face: " + polygon);
+                continue;
+            }
 
 			// Back-face culling.
 			// Check if polygon is facing away from the camera (in negative z-direction).
