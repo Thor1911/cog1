@@ -194,7 +194,7 @@ function(exports, shader, framebuffer, data) {
 	 *
 	 */
 	function scanlineStrokePolygon(vertices, polygon, color) {
-
+        calcPlaneEquation(vertices, polygon);
 		// Loop over vertices/edges in polygon.
 		for(var v = 0; v < polygon.length; v++) {
 
