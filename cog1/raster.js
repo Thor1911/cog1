@@ -240,7 +240,7 @@ function(exports, shader, framebuffer, data) {
             // For the start edge we need the last edge with derivative !=0,
             // Pre-calculate the derivatives for last edge !=0 of polygon.
             
-            derivative = calcDerivative(vertices[polygon[i]][1], vertices[polygon[i == 0 ? polygon.length - 1 : i - 1]][1]);
+            derivative = calcDerivative(Math.floor(vertices[polygon[i]][1]), Math.floor(vertices[polygon[i == 0 ? polygon.length - 1 : i - 1]][1]));
             if (derivative != 0) {
                 lastDerivative = derivative;
             }
@@ -259,29 +259,31 @@ function(exports, shader, framebuffer, data) {
             var start = vertices[polygon[i]];
             var end = vertices[polygon[i == 0 ? polygon.length - 1 : i - 1]];
 
+            
             // Convert parameters to integer values.
             // Use Math.floor() for integer cast and rounding of X-Y values.
             start[0] = Math.floor(start[0]);
             start[1] = Math.floor(start[1]);
             end[0] = Math.floor(end[0]);
             end[1] = Math.floor(end[1]);
+            
+            // Calculate current derivative
+            derivative = calcDerivative(start[1], end[1]);
 
             // Leave Z as floating point for comparisons in z-buffer.
             // Set texture coordinate uv-vector/array of the current edge for later interpolation.
             //TODO Texture
 
-            // Calculate current derivative
-            derivative = calcDerivative(start[1], end[1]);
-
             // Add end point of non horizontal edges.
             if (derivative != 0 ) {
-                addIntersection(end[0], end[1], end[2], 1);
-                
-                // Add start point if edges are non monotonous, Peek point.
-                if(derivative + lastDerivative == 0){
-                    addIntersection(end[0], end[1], end[2], 1);
-                }
-                
+                addIntersection(end[0], end[1], end[3], 1);
+            }
+            
+            if(derivative + lastDerivative == 0){
+                addIntersection(end[0], end[1], end[3], 1);
+            }
+            
+            if (derivative != 0 ) {
                 lastDerivative = derivative;
             }
             
@@ -315,6 +317,7 @@ function(exports, shader, framebuffer, data) {
 		// BEGIN exercise Z-Buffer (for interpolation of z)
 
 		// Calculate dz for linear interpolation along a scanline.
+        //dz = zEndFill - zStartFill;
 
 		// END exercise Z-Buffer
 
@@ -445,6 +448,7 @@ function(exports, shader, framebuffer, data) {
 		
 		// Fill polygon line by line using the scanline algorithm.
 		// Loop over non empty scan lines.
+		
 		for (var y = 0; y < scanlineIntersection.length; y++) {
 		    var line = scanlineIntersection[y];
 		    if (line == undefined){
@@ -473,7 +477,7 @@ function(exports, shader, framebuffer, data) {
                 // Fill line section inside polygon, loop x.
                 for(var x = intersecA.x; x <= intersecB.x; x++){
                     // Set z shorthand.
-                    var z = 0;
+                    var z = getZ(x, y);
                     
                     // Do horizontal clipping test (true if passed).
                     horizontalClippingTest = (x >= 0) && (x < width);
@@ -564,7 +568,7 @@ function(exports, shader, framebuffer, data) {
 
 		// Project first vertex (could be any) on normal.
 		// The result is the distance D of polygon plane to origin.
-
+        //D = 
 		// // Check result, applying the plane equation to the original polygon vertices.
 		// for(var i = 0; i < polygon.length; i++) {
 		// var p = polygon[i];
@@ -647,7 +651,7 @@ function(exports, shader, framebuffer, data) {
 		// Take this check out for speed.
 		// Or when the implemetation in not yet complete, i.e. scanline is not implemented.
 		if(!isFinite(z)) {
-			console.log("z isNaN or not isFinite for (x,y): " + x + " , " + y + " (A, B, D, inverseC): " + A + ", " + B + ", " + D + ", " + inverseC);
+			//console.log("z isNaN or not isFinite for (x,y): " + x + " , " + y + " (A, B, D, inverseC): " + A + ", " + B + ", " + D + ", " + inverseC);
 		}
 
 		return z;
