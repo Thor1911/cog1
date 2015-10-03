@@ -256,16 +256,15 @@ function(exports, shader, framebuffer, data) {
         for (var i = 0; i < polygon.length; i++) {
             
             // Determine start and end point of edge.
-            var start = vertices[polygon[i]];
-            var end = vertices[polygon[i == 0 ? polygon.length - 1 : i - 1]];
+            var start = [];
+            var end = [];
 
-            
             // Convert parameters to integer values.
             // Use Math.floor() for integer cast and rounding of X-Y values.
-            start[0] = Math.floor(start[0]);
-            start[1] = Math.floor(start[1]);
-            end[0] = Math.floor(end[0]);
-            end[1] = Math.floor(end[1]);
+            start[0] = Math.floor(vertices[polygon[i]][0]);
+            start[1] = Math.floor(vertices[polygon[i]][1]);
+            end[0] = Math.floor(vertices[polygon[i == 0 ? polygon.length - 1 : i - 1]][0]);
+            end[1] = Math.floor(vertices[polygon[i == 0 ? polygon.length - 1 : i - 1]][1]);
             
             // Calculate current derivative
             derivative = calcDerivative(start[1], end[1]);
@@ -317,8 +316,8 @@ function(exports, shader, framebuffer, data) {
 		// BEGIN exercise Z-Buffer (for interpolation of z)
 
 		// Calculate dz for linear interpolation along a scanline.
-        //dz = zEndFill - zStartFill;
-
+        var dz = zEndFill - zStartFill;
+        //TODO ??
 		// END exercise Z-Buffer
 
 		// BEGIN exercise Shading
@@ -383,7 +382,8 @@ function(exports, shader, framebuffer, data) {
 		// BEGIN exercise Z-Buffer (for interpolation of z or plane equ)
 
 		// Calculate z for next pixel, i.e. apply dz step.
-
+		//z += dz;
+        //TODO ??
 		// END exercise Z-Buffer
 
 
@@ -502,7 +502,7 @@ function(exports, shader, framebuffer, data) {
                         shadingFunction(color, interpolationData.weightOnScanline);
                         
                         // framebuffer.set without z-Test and dirty rectangle adjust.
-                        framebuffer.set(x, y, getZ(x, y), color);
+                        framebuffer.set(x, y, z, color);
                     }
                     
                     // Step interpolation variables on current scanline.
@@ -568,19 +568,20 @@ function(exports, shader, framebuffer, data) {
 
 		// Project first vertex (could be any) on normal.
 		// The result is the distance D of polygon plane to origin.
-        //D = 
-		// // Check result, applying the plane equation to the original polygon vertices.
-		// for(var i = 0; i < polygon.length; i++) {
-		// var p = polygon[i];
-		// var x = vertices[p][0];
-		// var y = vertices[p][1];
-		// var z = vertices[p][2];
-		// var zCalc = getZ(x, y);
-		// if(Math.abs(z - zCalc) > 0.001) {
-		// // console.log("Check failed  z "+z+" = "+zCalc);
-		// // console.log("Plane: A=" + A + " B=" + B + " C=" + C + " D=" + D);
-		// }
-		// };
+		var x = vertices[polygon[0]];
+        D = -(x[0] * A + x[1] * B + x[2] * C);
+        inverseC = 1 / C;
+		// Check result, applying the plane equation to the original polygon vertices.
+		for(var i = 0; i < polygon.length; i++) {
+    		var p = polygon[i];
+    		var x = vertices[p][0];
+    		var y = vertices[p][1];
+    		var z = vertices[p][2];
+    		var zCalc = getZ(x, y);
+    		if(Math.abs(z - zCalc) > epsilon) {
+    		    console.log("Check failed  z " + z + " = " + zCalc + " Plane: A=" + A + " B=" + B + " C=" + C + " D=" + D + " inverseC=" + inverseC + " x, y: " + x + ", " + y );
+    		}
+		};
 
 		// END exercise Z-Buffer
 
