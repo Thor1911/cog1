@@ -80,107 +80,109 @@ function(exports, shader, framebuffer, data) {
 	 */
 	function drawLineBresenham(startX, startY, startZ, endX, endY, endZ, color, storeIntersectionForScanlineFill, edgeStartVertexIndex, edgeEndVertexIndex, edgeStartTextureCoord, edgeEndTextureCoord) {
 
-		// Let endX be larger than startX.
-		// In this way on a shared edge between polygons the same left most fragment
-		// is stored as intersection and the will never be a gap on a step of the edge.
-		if(endX < startX) {
-			return drawLineBresenham(endX, endY, endZ, startX, startY, startZ, color, storeIntersectionForScanlineFill, edgeEndVertexIndex, edgeStartVertexIndex, edgeEndTextureCoord, edgeStartTextureCoord);
-		}
+	    // Let endX be larger than startX.
+	    // In this way on a shared edge between polygons the same left most fragment
+	    // is stored as intersection and the will never be a gap on a step of the edge.
+	    if (endX < startX) {
+	        return drawLineBresenham(endX, endY, endZ, startX, startY, startZ, color, storeIntersectionForScanlineFill, edgeEndVertexIndex, edgeStartVertexIndex, edgeEndTextureCoord, edgeStartTextureCoord);
+	    }
 
-		if(!storeIntersectionForScanlineFill) {
-			// Set rgbaShaded to rgba in case we do not apply shading.
-			vec3.set(color.rgba, color.rgbaShaded);
-			// set Alpha.
-			color.rgbaShaded[3] = color.rgba[3];
-		}
+	    if (!storeIntersectionForScanlineFill) {
+	        // Set rgbaShaded to rgba in case we do not apply shading.
+	        vec3.set(color.rgba, color.rgbaShaded);
+	        // set Alpha.
+	        color.rgbaShaded[3] = color.rgba[3];
+	    }
 
-		var dX = endX - startX;
-		var dY = endY - startY;
-		var dXAbs = Math.abs(dX);
-		var dYAbs = Math.abs(dY);
+	    var dX = endX - startX;
+	    var dY = endY - startY;
+	    var dXAbs = Math.abs(dX);
+	    var dYAbs = Math.abs(dY);
 
-		// Determine the direction to step.
-		var dXSign = dX >= 0 ? 1 : -1;
-		var dYSign = dY >= 0 ? 1 : -1;
+	    // Determine the direction to step.
+	    var dXSign = dX >= 0 ? 1 : -1;
+	    var dYSign = dY >= 0 ? 1 : -1;
 
-		// shorthands for speedup.
-		var dXAbs2 = 2 * dXAbs;
-		var dYAbs2 = 2 * dYAbs;
-		var dXdYdiff2 = 2 * (dXAbs - dYAbs);
-		var dYdXdiff2 = 2 * (dYAbs - dXAbs);
+	    // shorthands for speedup.
+	    var dXAbs2 = 2 * dXAbs;
+	    var dYAbs2 = 2 * dYAbs;
+	    var dXdYdiff2 = 2 * (dXAbs - dYAbs);
+	    var dYdXdiff2 = 2 * (dYAbs - dXAbs);
 
-		// Decision variable.
-		var e = 0;
-		// Loop variables.
-		var x = startX;
-		var y = startY;
+	    // Decision variable.
+	    var e = 0;
+	    // Loop variables.
+	    var x = startX;
+	    var y = startY;
 
-		// Prepare bi-linear interpolation for shading and textureing.
-		// Interpolated weight in interval [0,1] of the starting- and end-point of the current edge.
-		// The weight is the relative distance form the starting point.
-		// It is stored with an intersection for interpolation used for shading and textureing.
-		// The interpolation step is done in synchronous to the driving variable.
-		var interpolationWeight = 0;
-		var deltaInterpolationWeight;
+	    // Prepare bi-linear interpolation for shading and textureing.
+	    // Interpolated weight in interval [0,1] of the starting- and end-point of the current edge.
+	    // The weight is the relative distance form the starting point.
+	    // It is stored with an intersection for interpolation used for shading and textureing.
+	    // The interpolation step is done in synchronous to the driving variable.
+	    var interpolationWeight = 0;
+	    var deltaInterpolationWeight;
 
-		// BEGIN exercise Bresenham
-		// Comment out the next two lines.
-		//drawLine(startX, startY, endX, endY, color);
-		//return;
+	    // BEGIN exercise Bresenham
+	    // Comment out the next two lines.
+	    //drawLine(startX, startY, endX, endY, color);
+	    //return;
 
-		// Skip it, if the line is just a point.
-		if(startX == endX && startY == endY)
-		  return;
+	    // Skip it, if the line is just a point.
+	    if (startX == endX && startY == endY)
+	        return;
 
-		// Optionally draw start point as is the same
-		// as the end point of the previous edge.
-		// In any case, do not add an intersection for start point here,
-		// this should happen later in the scanline function.
-		framebuffer.set(x, y, getZ(x, y), color);
-		
-		// Distinction of cases for driving variable.
-        if(dXAbs > dYAbs){ // x is driving variable.
-            e = dXAbs - dYAbs;
-            for (var i = 0; i < dXAbs + dYAbs; i++) {
-			    if(e < 0){ //Schritt in langsame Richtung
-			        y += dYSign;
-                    e += dXAbs;
-                    // Do not add intersections for points on horizontal line
-                    // and not the end point, which is done in scanline.
-                    if (storeIntersectionForScanlineFill && startY != endY && endY != y && startY != y) {
-                        addIntersection(x, y, getZ(x, y), 1, edgeStartVertexIndex, edgeEndVertexIndex, edgeStartTextureCoord, edgeEndTextureCoord);
-                    }
-			    }
-			    else{ //Schritt in schnelle Richtung
-			        x += dXSign;
-                    e -= dYAbs;
-                }
-                
-			    framebuffer.set(x, y, getZ(x, y), color);
-			};
-        }
-        else{ // y is driving variable.
-            e = dYAbs - dXAbs;
-            for (var i = 0; i < dXAbs + dYAbs; i++) {
-                if(e < 0){ //Schritt in langsame Richtung
-                    x += dXSign;
-                    e += dYAbs;
-                }
-                else{ //Schritt in schnelle Richtung
-                    y += dYSign;
-                    e -= dXAbs;
-                    // Do not add intersections for points on horizontal line
-                    // and not the end point, which is done in scanline.
-                    if (storeIntersectionForScanlineFill && startY != endY && endY != y && startY != y) {
-                        addIntersection(x, y, getZ(x, y), 1, edgeStartVertexIndex, edgeEndVertexIndex, edgeStartTextureCoord, edgeEndTextureCoord);
-                    }
-                }
-                
-                framebuffer.set(x, y, getZ(x, y), color);
-            };
-		}
-				
-		// END exercise Bresenham
+	    // Optionally draw start point as is the same
+	    // as the end point of the previous edge.
+	    // In any case, do not add an intersection for start point here,
+	    // this should happen later in the scanline function.
+	    framebuffer.set(x, y, getZ(x, y), color);
+
+	    // Distinction of cases for driving variable.
+	    // x is driving variable.
+	    if (dXAbs >= dYAbs) {
+	        e = dXAbs - 2 * dYAbs;
+
+	        while (x != endX) {
+	            x = x + dXSign;
+	            if (e > 0) {
+	                e = e - 2 * dYAbs;
+	            } else {
+	                y = y + dYSign;
+	                e = e + 2 * (dXAbs - dYAbs);
+
+	                // Add every intersection as there can be only one per scan line.
+	                // but not the end point, which is done in scanline.
+	                if (storeIntersectionForScanlineFill && startY != endY && endY != y && startY != y) {
+	                    addIntersection(x, y, getZ(x, y), 1, edgeStartVertexIndex, edgeEndVertexIndex, edgeStartTextureCoord, edgeEndTextureCoord);
+	                }
+	            }
+	            framebuffer.set(x, y, getZ(x, y), color);
+	        }
+
+	    }
+	    // y is driving variable.	 
+	    else {
+	        e = dYAbs - 2 * dXAbs;
+
+	        while (y != endY) {
+	            y = y + dYSign;
+
+	            // Add every intersection as there can be only one per scan line.
+	            // but not the end point, which is done in scanline.
+	            if (storeIntersectionForScanlineFill && startY != endY && endY != y && startY != y) {
+	                addIntersection(x, y, getZ(x, y), 1, edgeStartVertexIndex, edgeEndVertexIndex, edgeStartTextureCoord, edgeEndTextureCoord);
+	            }
+	            if (e > 0) {
+	                e = e - 2 * dXAbs;
+	            } else {
+	                x = x + dXSign;
+	                e = e + 2 * (dYAbs - dXAbs);
+	            }
+	            framebuffer.set(x, y, getZ(x, y), color);
+	        }
+	    }
+	    // END exercise Bresenham
 	};
 	
 	
