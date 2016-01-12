@@ -22,6 +22,7 @@ function(exports, scenegraph, animation) {
 
 		// BEGIN exercise myModel
 		var myModel = scenegraph.createNodeWithModel("Aufgabe 2 - Haus vom Nikolaus", "myModel", {scale:200});	
+		var blenderModel = scenegraph.createNodeWithModel("Blender Model", "blenderModel", {scale:200});	
 		var sphere = scenegraph.createNodeWithModel("Projektaufgabe M2 - Kugel", "sphere", {scale:200, recursionDepth:3});		
 		// END exercise myModel
 
@@ -80,6 +81,7 @@ function(exports, scenegraph, animation) {
 		// Set visibility of nodes (hide: set to false).
 		// Comment out what you want to see as the default is visible.
         sphere.setVisible(false);
+        blenderModel.setVisible(false);
         cubeNode.setVisible(false);
         cubeNode1.setVisible(false);
         cubeNode2.setVisible(false);
